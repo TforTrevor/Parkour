@@ -79,7 +79,7 @@ namespace Parkour
                 }
             }            
 
-            if (MoveState == MovementState.Airborne)
+            if (MoveState == MovementState.Airborne || MoveState == MovementState.WallRunning)
             {
                 CheckWall();
             }
@@ -120,7 +120,7 @@ namespace Parkour
 
         void Rotate()
         {
-            transform.Rotate(Vector3.up, lookInput.Value.x * sensitivity.Value * 0.01f);
+            transform.Rotate(Vector3.up, lookInput.Value.x * sensitivity.Value * 0.01f * Time.timeScale);
         }
 
         public void Jump(bool value)

@@ -27,7 +27,7 @@ namespace Parkour
         {
             if (enableLook.Value)
             {
-                pitch -= lookInput.Value.y * sensitivity.Value * 0.01f;
+                pitch -= lookInput.Value.y * sensitivity.Value * 0.01f * Time.timeScale;
                 pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
                 transform.localEulerAngles = new Vector3(pitch, 0, roll);
             }            
