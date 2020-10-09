@@ -18,7 +18,6 @@ namespace Parkour
         [SerializeField] float airAcceleration;
         [SerializeField] float brakeSpeed;
         [SerializeField] float jumpForce;
-        [SerializeField] Vector2 direction;
         [SerializeField] LayerMask groundedMask;
         [SerializeField] float groundedOffset;
         [SerializeField] float groundedLength;
@@ -33,14 +32,13 @@ namespace Parkour
         Rigidbody rb;
         int currentJumps;
         int maximumJumps = 2;
-        public Vector3 previousWall;
-        public Vector3 currentWall;
+        Vector3 previousWall;
+        Vector3 currentWall;
         float verticalVelocity;
 
+        public MovementState MoveState { get; private set; }
         public bool IsMoving { get; private set; }
-        public bool IsGrounded { get; private set; }
         public Vector3 Velocity { get; private set; }
-        public bool IsWallRunning { get; private set; }
 
         void Awake()
         {
@@ -57,28 +55,31 @@ namespace Parkour
 
         void FixedUpdate()
         {
-            if (enableMove.Value && !IsWallRunning)
+            if (enableMove.Value && MoveState != MovementState.WallRunning)
             {
                 Move();
             }
             
-            if (!IsGrounded && !IsWallRunning)
+            if (MoveState == MovementState.Airborne)
             {
                 verticalVelocity += Physics.gravity.y * Time.deltaTime;
             }
 
-            RaycastHit hit;
-            if (Physics.SphereCast(transform.position + new Vector3(0, groundedOffset, 0), groundedRadius, Vector3.down, out hit, groundedLength, groundedMask))
+            if (MoveState != MovementState.WallRunning)
             {
-                IsGrounded = true;
-                ResetJumps();
-            }
-            else
-            {
-                IsGrounded = false;
-            }
+                RaycastHit hit;
+                if (Physics.SphereCast(transform.position + new Vector3(0, groundedOffset, 0), groundedRadius, Vector3.down, out hit, groundedLength, groundedMask))
+                {
+                    MoveState = MovementState.Grounded;
+                    ResetJumps();
+                }
+                else
+                {
+                    MoveState = MovementState.Airborne;
+                }
+            }            
 
-            if (!IsGrounded)
+            if (MoveState == MovementState.Airborne)
             {
                 CheckWall();
             }
@@ -92,9 +93,9 @@ namespace Parkour
             {
                 IsMoving = true;
 
-                float tempAcceleration = IsGrounded ? acceleration : airAcceleration;
+                float tempAcceleration = MoveState == MovementState.Grounded ? acceleration : airAcceleration;
                 Velocity += transform.TransformVector(new Vector3(moveInput.Value.x * tempAcceleration * Time.deltaTime, 0, moveInput.Value.y * tempAcceleration * Time.deltaTime));
-                if (IsGrounded && !IsWallRunning)
+                if (MoveState == MovementState.Grounded)
                 {
                     Velocity = Vector3.ClampMagnitude(Velocity, moveSpeed);
                 }                
@@ -103,7 +104,7 @@ namespace Parkour
             {
                 IsMoving = false;
 
-                if (IsGrounded)
+                if (MoveState == MovementState.Grounded)
                 {
                     if (Velocity.magnitude > 0.1f)
                     {
@@ -125,33 +126,34 @@ namespace Parkour
         public void Jump(bool value)
         {
             //Only call when jump is pressed down
-            if (!IsWallRunning && value && currentJumps < maximumJumps)
+            if (value && currentJumps < maximumJumps)
             {
-                if (!IsGrounded)
+                if (MoveState != MovementState.WallRunning)
                 {
-                    //Velocity = Vector3.zero;
-                    //Velocity += transform.TransformVector(new Vector3(moveInput.Value.x * jumpForce, 0, moveInput.Value.y * jumpForce));
-                    Vector3 direction = transform.TransformVector(new Vector3(moveInput.Value.x, 0, moveInput.Value.y).normalized);
-                    if (direction == Vector3.zero)
+                    if (MoveState == MovementState.Airborne)
                     {
-                        direction = transform.forward;
+                        Vector3 direction = transform.TransformVector(new Vector3(moveInput.Value.x, 0, moveInput.Value.y).normalized);
+                        if (direction == Vector3.zero)
+                        {
+                            direction = transform.forward;
+                        }
+                        Velocity = direction * Velocity.magnitude;
                     }
-                    Velocity = direction * Velocity.magnitude;
+
+                    verticalVelocity = jumpForce;
+
+                    currentJumps++;
                 }
+                else if (MoveState == MovementState.WallRunning)
+                {
+                    Vector3 direction = (Vector3.up + currentWall).normalized;
+                    DetachFromWall();
 
-                verticalVelocity = jumpForce;
+                    Velocity += direction * jumpForce;
+                    verticalVelocity = jumpForce;
 
-                currentJumps++;
-            }
-            else if (IsWallRunning && value && currentJumps < maximumJumps)
-            {
-                Vector3 direction = (Vector3.up + currentWall).normalized;
-                DetachFromWall();
-
-                Velocity += direction * jumpForce;
-                verticalVelocity = jumpForce;
-
-                currentJumps++;
+                    currentJumps++;
+                }
             }
         }
 
@@ -163,10 +165,10 @@ namespace Parkour
         //True is wall on right, false is wall on left
         void AttachToWall(Vector3 normal, bool direction)
         {
-            IsWallRunning = true;
+            MoveState = MovementState.WallRunning;
             currentWall = normal;
             ResetJumps();
-            //playerCamera.WallRide(true, !direction);
+
             BoolPair pair = new BoolPair();
             pair.Item1 = true;
             pair.Item2 = !direction;
@@ -203,7 +205,7 @@ namespace Parkour
                     AttachToWall(workingHit.normal, workingDir);
                 }
 
-                if (IsWallRunning)
+                if (MoveState == MovementState.WallRunning)
                 {
                     Vector3 forward = Vector3.Cross(Vector3.up, workingHit.normal);
                     forward *= Mathf.Sign(Vector3.Dot(forward, transform.forward));
@@ -218,7 +220,7 @@ namespace Parkour
                     }
                 }                
             }
-            else if (IsWallRunning)
+            else if (MoveState == MovementState.WallRunning)
             {
                 DetachFromWall();
             }
@@ -226,10 +228,10 @@ namespace Parkour
 
         void DetachFromWall()
         {
-            IsWallRunning = false;
+            MoveState = MovementState.Airborne;
             previousWall = currentWall;
             currentWall = Vector3.zero;
-            //playerCamera.WallRide(false, false);
+
             BoolPair pair = new BoolPair();
             pair.Item1 = false;
             pair.Item2 = false;
@@ -243,5 +245,14 @@ namespace Parkour
             yield return Timing.WaitForSeconds(wallCooldown);
             previousWall = Vector3.zero;
         }
+    }
+
+    public enum MovementState
+    {
+        Grounded,
+        Airborne,
+        WallRunning,
+        Grappling,
+        Climbing
     }
 }

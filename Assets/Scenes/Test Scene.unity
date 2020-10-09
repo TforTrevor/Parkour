@@ -7019,7 +7019,6 @@ MonoBehaviour:
   airAcceleration: 5
   brakeSpeed: 20
   jumpForce: 5
-  direction: {x: 0, y: 0}
   groundedMask:
     serializedVersion: 2
     m_Bits: 1024
@@ -7032,8 +7031,6 @@ MonoBehaviour:
   wallCooldown: 1
   wallVerticalBrake: 4
   wallRideEvent: {fileID: 11400000, guid: 0263216f2ec7e82419d3f438f01985e3, type: 2}
-  previousWall: {x: 0, y: 0, z: 0}
-  currentWall: {x: 0, y: 0, z: 0}
 --- !u!114 &1354713978
 MonoBehaviour:
   m_ObjectHideFlags: 0
