@@ -9,6 +9,7 @@ namespace Parkour
     public class PerformanceMetrics : MonoBehaviour
     {
         [SerializeField] TextMeshProUGUI scaleText;
+        [SerializeField] TextMeshProUGUI fpsText;
         [SerializeField] TextMeshProUGUI frameTimeText;
         [SerializeField] TextMeshProUGUI cpuFrameTimeText;
         [SerializeField] TextMeshProUGUI gpuFrameTimeText;
@@ -20,6 +21,8 @@ namespace Parkour
         {
             currentScale = DynamicResolutionHandler.instance.GetCurrentScale();
             scaleText.text = (currentScale * 100) + "%";
+
+            fpsText.text = (int)(1.0f / Time.unscaledDeltaTime) + "fps";
 
             frameTimeText.text = (Time.unscaledDeltaTime * 1000.0f) + "ms";
 

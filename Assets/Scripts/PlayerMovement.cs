@@ -119,7 +119,7 @@ namespace Parkour
 
         void Rotate()
         {
-            transform.Rotate(Vector3.up, lookInput.Value.x * sensitivity.Value * Time.deltaTime);
+            transform.Rotate(Vector3.up, lookInput.Value.x * sensitivity.Value * 0.01f);
         }
 
         public void Jump(bool value)

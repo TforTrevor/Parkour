@@ -16,11 +16,11 @@ namespace Parkour
 
         // Since this call uses DynamicResScalePolicyType.ReturnsMinMaxLerpFactor, HDRP uses currentScale in the following context:
         // finalScreenPercentage = Mathf.Lerp(minScreenPercentage, maxScreenPercentage, currentScale);
-        public float SetDynamicResolutionScale()
+        float SetDynamicResolutionScale()
         {
             float frameTimeTarget = 1f / frameRateTarget.Value;
 
-            if (Time.unscaledDeltaTime > frameTimeTarget + 0.01f)
+            if (Time.unscaledDeltaTime > frameTimeTarget + (0.2f * frameTimeTarget))
             {
                 currentScale -= 0.01f;
                 currentScale = Mathf.Clamp01(currentScale);
@@ -32,6 +32,24 @@ namespace Parkour
             }
 
             return currentScale;
+        }
+
+        float SetResolutionScale()
+        {
+            return currentScale;
+        }
+
+        public void SetResolutionScale(int value)
+        {
+            if (value > 0)
+            {
+                DynamicResolutionHandler.SetDynamicResScaler(SetResolutionScale, DynamicResScalePolicyType.ReturnsPercentage);
+                currentScale = value;
+            }
+            else
+            {
+                DynamicResolutionHandler.SetDynamicResScaler(SetDynamicResolutionScale, DynamicResScalePolicyType.ReturnsMinMaxLerpFactor);
+            }
         }
 
         void Start()

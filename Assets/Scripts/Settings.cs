@@ -13,9 +13,11 @@ namespace Parkour
     {
         [SerializeField] RenderPipelineAsset[] presetAssets;
         [SerializeField] Volume[] presetSettings;
+        [SerializeField] IntEvent resolutionScale;
         [SerializeField] IntVariable fpsTarget;
         [SerializeField] FloatVariable sensitivity;
         [SerializeField] Canvas canvas;
+        [SerializeField] TMP_InputField resolutionScaleInput;
         [SerializeField] TMP_InputField fpsTargetInput;
         [SerializeField] TMP_InputField fpsCapInput;
         [SerializeField] TextMeshProUGUI sensitivityText;
@@ -25,6 +27,7 @@ namespace Parkour
         void Start()
         {
             fpsTargetInput.text = fpsTarget.Value.ToString();
+            SetResolutionScale("100");
 
             canvas.enabled = false;
         }
@@ -52,6 +55,21 @@ namespace Parkour
             //test.customRenderingSettings = true;
             //frameSettingsOverrideMask.
             //https://forum.unity.com/threads/hdrp-change-custom-frame-settings-through-scripts.749171/
+        }
+
+        public void SetResolutionScale(string value)
+        {
+            int result;
+            if (int.TryParse(value, out result))
+            {
+                result = Mathf.Clamp(result, 10, 100);
+                resolutionScaleInput.text = result.ToString();
+                resolutionScale.Raise(result);
+            }
+            else
+            {
+                resolutionScale.Raise(-1);
+            }
         }
 
         public void SetFPSTarget(string value)
