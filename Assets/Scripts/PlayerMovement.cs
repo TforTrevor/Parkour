@@ -8,11 +8,11 @@ namespace Parkour
 {
     public class PlayerMovement : MonoBehaviour
     {
+        [SerializeField] BoolVariable enableMove;
+        [SerializeField] BoolVariable enableLook;
         [SerializeField] Vector2Variable moveInput;
         [SerializeField] Vector2Variable lookInput;
-        public bool enableMove;
-        public bool enableLook;
-        [SerializeField] float sensitivity;
+        [SerializeField] FloatVariable sensitivity;
         [SerializeField] float moveSpeed;
         [SerializeField] float acceleration;
         [SerializeField] float airAcceleration;
@@ -28,7 +28,7 @@ namespace Parkour
         [SerializeField] float wallSpeed;
         [SerializeField] float wallCooldown;
         [SerializeField] float wallVerticalBrake;
-        [SerializeField] PlayerCamera playerCamera;
+        [SerializeField] BoolPairEvent wallRideEvent;
 
         Rigidbody rb;
         int currentJumps;
@@ -49,7 +49,7 @@ namespace Parkour
 
         void Update()
         {
-            if (enableLook)
+            if (enableLook.Value)
             {
                 Rotate();
             }
@@ -57,7 +57,7 @@ namespace Parkour
 
         void FixedUpdate()
         {
-            if (enableMove && !IsWallRunning)
+            if (enableMove.Value && !IsWallRunning)
             {
                 Move();
             }
@@ -119,7 +119,7 @@ namespace Parkour
 
         void Rotate()
         {
-            transform.Rotate(Vector3.up, lookInput.Value.x * sensitivity * Time.deltaTime);
+            transform.Rotate(Vector3.up, lookInput.Value.x * sensitivity.Value * Time.deltaTime);
         }
 
         public void Jump(bool value)
@@ -130,7 +130,13 @@ namespace Parkour
                 if (!IsGrounded)
                 {
                     //Velocity = Vector3.zero;
-                    Velocity += transform.TransformVector(new Vector3(moveInput.Value.x * jumpForce, 0, moveInput.Value.y * jumpForce));
+                    //Velocity += transform.TransformVector(new Vector3(moveInput.Value.x * jumpForce, 0, moveInput.Value.y * jumpForce));
+                    Vector3 direction = transform.TransformVector(new Vector3(moveInput.Value.x, 0, moveInput.Value.y).normalized);
+                    if (direction == Vector3.zero)
+                    {
+                        direction = transform.forward;
+                    }
+                    Velocity = direction * Velocity.magnitude;
                 }
 
                 verticalVelocity = jumpForce;
@@ -160,7 +166,11 @@ namespace Parkour
             IsWallRunning = true;
             currentWall = normal;
             ResetJumps();
-            playerCamera.WallRide(true, !direction);
+            //playerCamera.WallRide(true, !direction);
+            BoolPair pair = new BoolPair();
+            pair.Item1 = true;
+            pair.Item2 = !direction;
+            wallRideEvent.Raise(pair);
             Velocity -= normal * Vector3.Dot(normal, Velocity);
         }
 
@@ -219,7 +229,11 @@ namespace Parkour
             IsWallRunning = false;
             previousWall = currentWall;
             currentWall = Vector3.zero;
-            playerCamera.WallRide(false, false);
+            //playerCamera.WallRide(false, false);
+            BoolPair pair = new BoolPair();
+            pair.Item1 = false;
+            pair.Item2 = false;
+            wallRideEvent.Raise(pair);
 
             Timing.RunCoroutine(WallCooldown());
         }

@@ -8,10 +8,14 @@ namespace Parkour
 {
     public class PlayerInput : MonoBehaviour
     {
-        UnityEngine.InputSystem.PlayerInput input;
         [SerializeField] Vector2Variable move;
         [SerializeField] Vector2Variable look;
+        [SerializeField] VoidEvent openSettings;
+        [SerializeField] VoidEvent closeSettings;
+
         PlayerMovement movement;
+        UnityEngine.InputSystem.PlayerInput input;
+        bool settingsOpen;
 
         void Awake()
         {
@@ -38,6 +42,16 @@ namespace Parkour
                 case "Jump":
                     if (action.ReadValue<float>() == 1)
                         movement.Jump(true);
+                    break;
+                case "Settings":
+                    if (action.ReadValue<float>() == 1)
+                    {
+                        settingsOpen = !settingsOpen;
+                        if (settingsOpen)
+                            openSettings.Raise();
+                        else
+                            closeSettings.Raise();
+                    }                    
                     break;
             }            
         }

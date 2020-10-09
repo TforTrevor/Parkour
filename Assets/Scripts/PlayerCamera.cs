@@ -8,10 +8,11 @@ namespace Parkour
 {
     public class PlayerCamera : MonoBehaviour
     {
+        [SerializeField] BoolVariable enableLook;
         [SerializeField] Vector2Variable lookInput;
+        [SerializeField] FloatVariable sensitivity;
         [SerializeField] float maxPitch;
-        [SerializeField] float minPitch;
-        [SerializeField] float sensitivity;
+        [SerializeField] float minPitch;        
         [SerializeField] float wallRideRoll;
 
         float pitch;
@@ -19,30 +20,43 @@ namespace Parkour
 
         void Start()
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            LockCursor();
         }
 
         void Update()
         {
-            pitch -= lookInput.Value.y * sensitivity * Time.deltaTime;
-            pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
-            transform.localEulerAngles = new Vector3(pitch, 0, roll);
+            if (enableLook.Value)
+            {
+                pitch -= lookInput.Value.y * sensitivity.Value * Time.deltaTime;
+                pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+                transform.localEulerAngles = new Vector3(pitch, 0, roll);
+            }            
         }
 
-        //True is rotate right, false is rotate left
-        public void WallRide(bool value, bool direction)
+        //Item2: true is rotate right, false is rotate left
+        public void WallRide(BoolPair pair)
         {
-            if (value)
+            if (pair.Item1)
             {
-                float amount = direction ? -wallRideRoll : wallRideRoll;
+                float amount = pair.Item2 ? -wallRideRoll : wallRideRoll;
                 DOTween.To(() => roll, x => roll = x, amount, 0.5f);
             }
             else
             {
                 DOTween.To(() => roll, x => roll = x, 0, 0.5f);
-                //roll = 0;
             }
+        }
+
+        public void UnlockCursor()
+        {
+            Cursor.lockState = CursorLockMode.Confined;
+            Cursor.visible = true;
+        }
+
+        public void LockCursor()
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
     }
 }
