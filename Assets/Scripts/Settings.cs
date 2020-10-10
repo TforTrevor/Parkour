@@ -16,11 +16,13 @@ namespace Parkour
         [SerializeField] IntEvent resolutionScale;
         [SerializeField] IntVariable fpsTarget;
         [SerializeField] FloatVariable sensitivity;
+        [SerializeField] IntEvent fov;
         [SerializeField] Canvas canvas;
         [SerializeField] TMP_InputField resolutionScaleInput;
         [SerializeField] TMP_InputField fpsTargetInput;
         [SerializeField] TMP_InputField fpsCapInput;
         [SerializeField] TextMeshProUGUI sensitivityText;
+        [SerializeField] TextMeshProUGUI fovText;
 
         float timeScale;
 
@@ -28,6 +30,7 @@ namespace Parkour
         {
             fpsTargetInput.text = fpsTarget.Value.ToString();
             SetResolutionScale("100");
+            SetFOV(90);
 
             canvas.enabled = false;
         }
@@ -128,6 +131,12 @@ namespace Parkour
                     QualitySettings.maxQueuedFrames = 2;
                     break;
             }
+        }
+
+        public void SetFOV(float value)
+        {
+            fov.Raise((int)value);
+            fovText.text = value.ToString();
         }
 
         public void Quit()

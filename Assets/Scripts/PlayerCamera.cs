@@ -15,8 +15,14 @@ namespace Parkour
         [SerializeField] float minPitch;        
         [SerializeField] float wallRideRoll;
 
+        new Camera camera;
         float pitch;
         float roll;
+
+        void Awake()
+        {
+            camera = GetComponent<Camera>();
+        }
 
         void Start()
         {
@@ -57,6 +63,12 @@ namespace Parkour
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+        }
+
+        public void SetFOV(int value)
+        {
+            float vertical = Camera.HorizontalToVerticalFieldOfView(value, camera.aspect);
+            camera.fieldOfView = vertical;
         }
     }
 }
