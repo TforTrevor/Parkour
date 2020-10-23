@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityAtoms.BaseAtoms;
 using UnityEngine;
+using Cinemachine;
 
 namespace Parkour
 {
@@ -14,14 +15,17 @@ namespace Parkour
         [SerializeField] float maxPitch;
         [SerializeField] float minPitch;        
         [SerializeField] float wallRideRoll;
+        [SerializeField] float normalHeight;
+        [SerializeField] float crouchHeight;
+        [SerializeField] float crouchTime;
 
-        new Camera camera;
+        CinemachineVirtualCamera virtualCamera;
         float pitch;
         float roll;
 
         void Awake()
         {
-            camera = GetComponent<Camera>();
+            virtualCamera = GetComponent<CinemachineVirtualCamera>();
         }
 
         void Start()
@@ -67,8 +71,20 @@ namespace Parkour
 
         public void SetFOV(int value)
         {
-            float vertical = Camera.HorizontalToVerticalFieldOfView(value, camera.aspect);
-            camera.fieldOfView = vertical;
+            float vertical = Camera.HorizontalToVerticalFieldOfView(value, virtualCamera.m_Lens.Aspect);
+            virtualCamera.m_Lens.FieldOfView = vertical;
+        }
+
+        public void Crouch(bool value)
+        {
+            if (value)
+            {
+                DOTween.To(() => transform.localPosition, x => transform.localPosition = x, new Vector3(0, crouchHeight, 0), crouchTime);
+            }
+            else
+            {
+                DOTween.To(() => transform.localPosition, x => transform.localPosition = x, new Vector3(0, normalHeight, 0), crouchTime);
+            }
         }
     }
 }

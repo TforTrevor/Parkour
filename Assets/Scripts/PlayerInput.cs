@@ -53,6 +53,17 @@ namespace Parkour
                             closeSettings.Raise();
                     }                    
                     break;
+                case "Crouch":
+                    if (action.ReadValue<float>() == 1)
+                        movement.Crouch(true);
+                    else
+                        movement.Crouch(false);
+                    break;
+                case "Sprint":
+                    if (action.ReadValue<float>() == 1)
+                        movement.ToggleSprint(true);
+                    break;
+
             }            
         }
     }
