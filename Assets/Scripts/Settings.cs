@@ -4,7 +4,6 @@ using TMPro;
 using UnityAtoms.BaseAtoms;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.UI;
 
 namespace Parkour
