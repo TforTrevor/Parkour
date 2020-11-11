@@ -151,6 +151,8 @@ MonoBehaviour:
   m_RenderPipelineResources: {fileID: 11400000, guid: 3ce144cff5783da45aa5d4fdc2da14b7, type: 2}
   m_RenderPipelineRayTracingResources: {fileID: 0}
   m_DefaultVolumeProfile: {fileID: 11400000, guid: f1908679f3c9d114fa9f77d130b99e70, type: 2}
+  m_LensAttenuation: 0
+  m_UseRenderGraph: 1
   m_DefaultLookDevProfile: {fileID: 11400000, guid: 254c4fe87beb7be4fa72e1681edbed02, type: 2}
   m_RenderingPathDefaultCameraFrameSettings:
     bitDatas:
@@ -223,6 +225,10 @@ MonoBehaviour:
     supportCustomPass: 1
     customBufferFormat: 12
     supportedLitShaderMode: 2
+    planarReflectionResolution:
+      m_Values: 000100000004000000080000
+      m_SchemaId:
+        m_Id: With3Levels
     supportDecals: 1
     supportDecalLayers: 0
     decalLayerName0: Decal Layer default
@@ -236,6 +242,7 @@ MonoBehaviour:
     msaaSampleCount: 1
     supportMotionVectors: 1
     supportRuntimeDebugDisplay: 1
+    supportRuntimeAOVAPI: 0
     supportDitheringCrossFade: 1
     supportTerrainHole: 0
     supportProbeVolume: 0
@@ -253,6 +260,7 @@ MonoBehaviour:
       reflectionProbeCacheSize: 64
       reflectionCubemapSize: 256
       reflectionCacheCompressed: 0
+      reflectionProbeFormat: 74
       skyReflectionSize: 256
       skyLightingOverrideLayerMask:
         serializedVersion: 2
@@ -339,6 +347,7 @@ MonoBehaviour:
       MotionBlurSampleCount: 04000000080000000c000000
       BloomRes: 040000000200000002000000
       BloomHighQualityFiltering: 000101
+      BloomHighQualityPrefiltering: 000001
       ChromaticAberrationMaxSamples: 03000000060000000c000000
     lightSettings:
       useContactShadow:
