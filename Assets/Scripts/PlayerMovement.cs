@@ -115,7 +115,6 @@ namespace Parkour
                 if (!groundedCheck && (verticalVelocity > 0 ? true : !projectCheck))
                 {
                     MoveState = MovementState.Airborne;
-                    Debug.Log("Airborne");
                 }
 
                 if (MoveState != MovementState.Airborne && projectCheck && verticalVelocity <= 0)
@@ -145,7 +144,11 @@ namespace Parkour
                     {
                         //Sliding downhill
                         float multiplier = 1 - Vector3.Dot(Vector3.up, hit.normal);
-                        Velocity += transform.forward * slideAccleration * multiplier * Time.deltaTime;
+                        Vector3 slopeDirection = Vector3.Cross(hit.normal, Vector3.right);
+                        slopeDirection = new Vector3(Mathf.Abs(slopeDirection.x) * Mathf.Sign(hit.normal.x), Mathf.Abs(slopeDirection.y) * -1, Mathf.Abs(slopeDirection.z) * Mathf.Sign(hit.normal.z));
+                        Debug.Log(hit.normal);
+                        //Debug.Log(slopeDirection);
+                        Velocity += slopeDirection * slideAccleration * multiplier * Time.deltaTime;
                         Velocity = Vector3.ClampMagnitude(Velocity, slideSpeed);
                     }
                     else
@@ -153,8 +156,6 @@ namespace Parkour
                         //Sliding uphill or on flat ground
                         Velocity -= Velocity.normalized * slideBrake * (1 - slope) * Time.deltaTime;
                     }
-
-                    //Velocity = Vector3.ProjectOnPlane(Velocity, hit.normal);
                 }
             }
             else
@@ -292,8 +293,9 @@ namespace Parkour
             {
                 RaycastHit rightHit;
                 RaycastHit leftHit;
-                bool rightCheck = Physics.Raycast(transform.position + new Vector3(wallOffset, normalHeight / 2, 0), transform.right, out rightHit, wallLength, groundedMask);
-                bool leftCheck = Physics.Raycast(transform.position + new Vector3(-wallOffset, normalHeight / 2, 0), -transform.right, out leftHit, wallLength, groundedMask);
+                
+                bool rightCheck = Physics.Raycast(transform.TransformPoint(new Vector3(wallOffset, normalHeight / 2, 0)), transform.right, out rightHit, wallLength, groundedMask);
+                bool leftCheck = Physics.Raycast(transform.TransformPoint(new Vector3(-wallOffset, normalHeight / 2, 0)), -transform.right, out leftHit, wallLength, groundedMask);
 
                 RaycastHit workingHit = new RaycastHit();
                 bool workingCheck = false;
