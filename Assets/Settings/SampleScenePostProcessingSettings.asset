@@ -27,7 +27,7 @@ MonoBehaviour:
     max: 1
   m_MaxSamples:
     m_OverrideState: 0
-    m_Value: 8
+    m_Value: 6
     min: 3
     max: 24
 --- !u!114 &11400000

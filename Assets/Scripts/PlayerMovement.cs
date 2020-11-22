@@ -57,6 +57,7 @@ namespace Parkour
 
         public MovementState MoveState { get; private set; }
         public bool IsMoving { get; private set; }
+        public bool IsGrounded { get; private set; }
         public bool IsCrouching { get; private set; }
         public Vector3 Velocity { get; private set; }
 
@@ -75,22 +76,19 @@ namespace Parkour
 
         void FixedUpdate()
         {
-            if (IsCrouching && Velocity.magnitude >= slideThreshold && MoveState != MovementState.Airborne)
-            {
-                MoveState = MovementState.Sliding;
-            }
+            
 
             if (MoveState == MovementState.Sliding)
             {
                 Slide();
             }
 
-            if (enableMove.Value && (MoveState == MovementState.Default || MoveState == MovementState.Sprinting || MoveState == MovementState.Airborne))
+            if (enableMove.Value && (MoveState == MovementState.Default || MoveState == MovementState.Sprinting || !IsGrounded))
             {
                 Move();
             }
             
-            if (MoveState == MovementState.Airborne)
+            if (!IsGrounded && MoveState != MovementState.WallRunning)
             {
                 verticalVelocity += Physics.gravity.y * Time.deltaTime;
             }
@@ -103,9 +101,9 @@ namespace Parkour
                 bool groundedCheck = Physics.Raycast(transform.position + new Vector3(0, groundedOffset, 0), Vector3.down, out groundHit, groundedLength, groundedMask);
                 bool projectCheck = Physics.Raycast(transform.position + new Vector3(0, groundedOffset, 0), Vector3.down, out projectHit, projectLength, groundedMask);
                 //Landed on ground
-                if (MoveState == MovementState.Airborne && groundedCheck)
+                if (!IsGrounded && groundedCheck)
                 {
-                    MoveState = MovementState.Default;
+                    IsGrounded = true;
                     transform.position = groundHit.point;
                     verticalVelocity = 0;
                     previousWall = Vector3.zero;
@@ -114,17 +112,17 @@ namespace Parkour
                 //if (!groundedCheck && !projectCheck)
                 if (!groundedCheck && (verticalVelocity > 0 ? true : !projectCheck))
                 {
-                    MoveState = MovementState.Airborne;
+                    IsGrounded = false;
                 }
 
-                if (MoveState != MovementState.Airborne && projectCheck && verticalVelocity <= 0)
+                if (IsGrounded && projectCheck && verticalVelocity <= 0)
                 {
                     transform.position = new Vector3(transform.position.x, projectHit.point.y, transform.position.z);
                     Velocity = Vector3.ProjectOnPlane(Velocity, projectHit.normal);
                 }
             }
 
-            if (MoveState == MovementState.Airborne || MoveState == MovementState.WallRunning)
+            if (!IsGrounded || MoveState == MovementState.WallRunning)
             {
                 CheckWall();
             }
@@ -134,33 +132,28 @@ namespace Parkour
 
         void Slide()
         {
-            if (Velocity.magnitude > 2f)
+            RaycastHit hit;
+            if (Physics.Raycast(transform.position + new Vector3(0, groundedOffset, 0), Vector3.down, out hit, projectLength, groundedMask))
             {
-                RaycastHit hit;
-                if (Physics.Raycast(transform.position + new Vector3(0, groundedOffset, 0), Vector3.down, out hit, projectLength, groundedMask))
+                float slope = Vector3.Dot(hit.normal, new Vector3(Velocity.x, 0, Velocity.z));
+                if (slope > 0)
                 {
-                    float slope = Vector3.Dot(hit.normal, new Vector3(Velocity.x, 0, Velocity.z));
-                    if (slope > 0)
-                    {
-                        //Sliding downhill
-                        float multiplier = 1 - Vector3.Dot(Vector3.up, hit.normal);
-                        Vector3 slopeDirection = Vector3.Cross(hit.normal, Vector3.right);
-                        slopeDirection = new Vector3(Mathf.Abs(slopeDirection.x) * Mathf.Sign(hit.normal.x), Mathf.Abs(slopeDirection.y) * -1, Mathf.Abs(slopeDirection.z) * Mathf.Sign(hit.normal.z));
-                        Debug.Log(hit.normal);
-                        //Debug.Log(slopeDirection);
-                        Velocity += slopeDirection * slideAccleration * multiplier * Time.deltaTime;
-                        Velocity = Vector3.ClampMagnitude(Velocity, slideSpeed);
-                    }
-                    else
-                    {
-                        //Sliding uphill or on flat ground
-                        Velocity -= Velocity.normalized * slideBrake * (1 - slope) * Time.deltaTime;
-                    }
+                    //Sliding downhill
+                    float multiplier = 1 - Vector3.Dot(Vector3.up, hit.normal);
+                    Vector3 slopeDirection = Vector3.Cross(hit.normal, Vector3.right);
+                    slopeDirection = new Vector3(Mathf.Abs(slopeDirection.x) * Mathf.Sign(hit.normal.x), Mathf.Abs(slopeDirection.y) * -1, Mathf.Abs(slopeDirection.z) * Mathf.Sign(hit.normal.z));
+
+                    Vector3 targetVelocity = slopeDirection * slideSpeed;
+                    Vector3 force = (targetVelocity - Velocity).normalized * slideAccleration;
+                    //Velocity += slopeDirection * slideAccleration * multiplier * Time.deltaTime;
+                    //Velocity = Vector3.ClampMagnitude(Velocity, slideSpeed);
+                    Velocity += force * multiplier * Time.deltaTime;
                 }
-            }
-            else
-            {
-                MoveState = MovementState.Default;
+                else
+                {
+                    //Sliding uphill or on flat ground
+                    Velocity -= Velocity.normalized * slideBrake * (1 - slope) * Time.deltaTime;
+                }
             }
         }
 
@@ -178,9 +171,6 @@ namespace Parkour
                         tempAcceleration = walkAcceleration;
                         tempSpeed = walkSpeed;
                         break;
-                    case MovementState.Airborne:
-                        tempAcceleration = airAcceleration;
-                        break;
                     case MovementState.Sprinting:
                         tempAcceleration = sprintAcceleration;
                         tempSpeed = sprintSpeed;
@@ -191,20 +181,18 @@ namespace Parkour
                     tempAcceleration = crouchAcceleration;
                     tempSpeed = crouchSpeed;
                 }
+                if (!IsGrounded)
+                {
+                    tempAcceleration = airAcceleration;
+                    tempSpeed = Mathf.Max(Velocity.magnitude, tempSpeed);
+                }
 
                 Vector3 inputVector = new Vector3(moveInput.Value.x, 0, moveInput.Value.y).normalized;
 
-                Velocity += transform.TransformVector(inputVector * tempAcceleration * Time.deltaTime);
-                if (MoveState != MovementState.Airborne)
-                {
-                    Velocity = Vector3.ClampMagnitude(Velocity, tempSpeed);
-                }
-
-                RaycastHit hit;
-                if (Physics.Raycast(transform.position + new Vector3(0, groundedOffset, 0), Vector3.down, out hit, projectLength, groundedMask))
-                {
-                    //Velocity = Vector3.ProjectOnPlane(Velocity, hit.normal);
-                }
+                Vector3 targetVelocity = transform.TransformDirection(inputVector) * tempSpeed;
+                Vector3 force = (targetVelocity - Velocity).normalized * tempAcceleration;
+                //force = Vector3.ClampMagnitude(force, tempAcceleration);
+                Velocity += force * Time.deltaTime;
             }
             else
             {
@@ -215,7 +203,7 @@ namespace Parkour
                     MoveState = MovementState.Default;
                 }
 
-                if (MoveState == MovementState.Default)
+                if (MoveState == MovementState.Default && IsGrounded)
                 {
                     if (Velocity.magnitude > 0.25f)
                     {
@@ -241,7 +229,7 @@ namespace Parkour
             {
                 if (MoveState != MovementState.WallRunning)
                 {
-                    if (MoveState == MovementState.Airborne)
+                    if (!IsGrounded)
                     {
                         Vector3 direction = transform.TransformVector(new Vector3(moveInput.Value.x, 0, moveInput.Value.y).normalized);
                         if (direction == Vector3.zero)
@@ -347,7 +335,7 @@ namespace Parkour
 
         void DetachFromWall()
         {
-            MoveState = MovementState.Airborne;
+            MoveState = MovementState.Default;
             previousWall = currentWall;
             currentWall = Vector3.zero;
 
@@ -375,6 +363,10 @@ namespace Parkour
                 if (MoveState == MovementState.Sprinting)
                 {
                     MoveState = MovementState.Default;
+                }
+                if (Velocity.magnitude >= slideThreshold && IsGrounded)
+                {
+                    MoveState = MovementState.Sliding;
                 }
             }
             else
@@ -408,7 +400,6 @@ namespace Parkour
     public enum MovementState
     {
         Default,
-        Airborne,
         WallRunning,
         Grappling,
         Climbing,
